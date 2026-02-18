@@ -2,9 +2,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from tensorflow.keras.models import load_model, Sequential
-from tensorflow.keras.layers import Dense
 import numpy as np
+import onnxruntime as ort
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 
 app = FastAPI()
 
@@ -15,7 +16,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-addition_model = load_model("models/addition_nn.h5", compile=False)
+sess = ort.InferenceSession("models/addition_model.onnx")
+input_name = sess.get_inputs()[0].name
 
 def build_oddeven_model():
     model = Sequential([
@@ -56,8 +58,8 @@ def get_project(project_id: int):
 
 @app.post("/predict/sum")
 def predict_sum(a: float, b: float):
-    x = np.array([[a,b]]) / 100
-    y = addition_model.predict(x)[0][0] * 200
+    x = np.array([[a,b]], dtype=np.float32) / 100
+    y = sess.run(None, {input_name: x})[0][0][0] * 200
     return {"result": float(y)}
 
 @app.post("/predict/oddeven")
