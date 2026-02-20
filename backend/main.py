@@ -6,6 +6,7 @@ import numpy as np
 import onnxruntime as ort
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
+import joblib
 
 app = FastAPI()
 
@@ -18,6 +19,11 @@ app.add_middleware(
 
 sess = ort.InferenceSession("models/addition_model.onnx")
 input_name = sess.get_inputs()[0].name
+
+churn_sess = ort.InferenceSession("models/churn_model.onnx")
+churn_input_name = churn_sess.get_inputs()[0].name
+
+churn_scaler = joblib.load("models/scaler_churn.pkl")
 
 def build_oddeven_model():
     model = Sequential([
@@ -36,9 +42,22 @@ class Project(BaseModel):
     description: Optional[str] = None
     type: str
 
+class ChurnRequest(BaseModel):
+    CreditScore: float
+    Geography: str
+    Gender: str
+    Age: float
+    Tenure: float
+    Balance: float
+    NumOfProducts: float
+    HasCrCard: float
+    IsActiveMember: float
+    EstimatedSalary: float
+
 projects_db = [
     {"id": 1, "name": "ML Sum Predictor", "description": "Neural network that predicts sum of two numbers", "type": "sum"},
-    {"id": 2, "name": "Odd/Even Predictor", "description": "Neural network that predicts if a number is odd or even", "type": "oddeven"}
+    {"id": 2, "name": "Odd/Even Predictor", "description": "Neural network that predicts if a number is odd or even", "type": "oddeven"},
+    {"id": 3, "name": "Churn Predictor", "description": "Neural network that predicts customer churn", "type": "churn"}
 ]
 
 @app.get("/")
@@ -68,3 +87,42 @@ def predict_oddeven(n: int):
     y = odd_even_model.predict(x)[0][0]
     is_even = y < 0.5
     return {"result": bool(is_even)}
+
+@app.post("/predict/churn")
+def predict_churn(request: ChurnRequest):
+    CreditScore = request.CreditScore
+    Geography = request.Geography
+    Gender = request.Gender
+    Age = request.Age
+    Tenure = request.Tenure
+    Balance = request.Balance
+    NumOfProducts = request.NumOfProducts
+    HasCrCard = request.HasCrCard
+    IsActiveMember = request.IsActiveMember
+    EstimatedSalary = request.EstimatedSalary
+    
+    geography_france = 1 if Geography == "France" else 0
+    geography_germany = 1 if Geography == "Germany" else 0
+    geography_spain = 1 if Geography == "Spain" else 0
+    
+    gender = 1 if Gender == "Male" else 0
+    
+    x = np.array([[
+        CreditScore,
+        gender,
+        Age,
+        Tenure,
+        Balance,
+        NumOfProducts,
+        HasCrCard,
+        IsActiveMember,
+        EstimatedSalary,
+        geography_france,
+        geography_germany,
+        geography_spain
+    ]], dtype=np.float32)
+    
+    x_scaled = churn_scaler.transform(x)
+    y = churn_sess.run(None, {churn_input_name: x_scaled})[0][0][0]
+    will_churn = y > 0.34
+    return {"result": bool(will_churn), "probability": float(y)}
