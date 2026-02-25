@@ -47,6 +47,11 @@ class Project(BaseModel):
     description: Optional[str] = None
     type: str
 
+class Task(BaseModel):
+    id: int
+    title: str
+    completed: bool = False
+
 class ChurnRequest(BaseModel):
     CreditScore: float
     Geography: str
