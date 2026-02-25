@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/big-pickle/high",
+  "provider": {
+    "opencode": {
+      "options": {
+        "baseURL": "https://az-east-us-2-mordenapps.openai.azure.com/openai"
+      }
+    }
+  }
+}

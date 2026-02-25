@@ -47,6 +47,14 @@ class Project(BaseModel):
     description: Optional[str] = None
     type: str
 
+class TaskCreate(BaseModel):
+    title: str
+
+class Task(BaseModel):
+    id: int
+    title: str
+    completed: bool = False
+
 class ChurnRequest(BaseModel):
     CreditScore: float
     Geography: str
@@ -66,6 +74,9 @@ projects_db = [
     {"id": 4, "name": "Image Classifier", "description": "CNN model that classifies images", "type": "cnn"}
 ]
 
+tasks_db = []
+task_id_counter = 1
+
 @app.get("/")
 def root():
     return {"status": "running"}
@@ -73,6 +84,41 @@ def root():
 @app.get("/api/projects")
 def get_projects():
     return projects_db
+
+@app.post("/api/tasks")
+def create_task(task_create: TaskCreate):
+    global task_id_counter
+    task = {
+        "id": task_id_counter,
+        "title": task_create.title,
+        "completed": False
+    }
+    tasks_db.append(task)
+    task_id_counter += 1
+    return task
+
+@app.get("/api/tasks")
+def get_tasks():
+    return tasks_db
+
+class TaskUpdate(BaseModel):
+    completed: bool
+
+@app.patch("/api/tasks/{task_id}")
+def update_task(task_id: int, task_update: TaskUpdate):
+    for task in tasks_db:
+        if task["id"] == task_id:
+            task["completed"] = task_update.completed
+            return task
+    raise HTTPException(status_code=404, detail="Task not found")
+
+@app.delete("/api/tasks/{task_id}")
+def delete_task(task_id: int):
+    for i, task in enumerate(tasks_db):
+        if task["id"] == task_id:
+            tasks_db.pop(i)
+            return {"message": "Task deleted"}
+    raise HTTPException(status_code=404, detail="Task not found")
 
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: int):
