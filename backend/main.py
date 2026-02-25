@@ -47,6 +47,9 @@ class Project(BaseModel):
     description: Optional[str] = None
     type: str
 
+class TaskCreate(BaseModel):
+    title: str
+
 class Task(BaseModel):
     id: int
     title: str
@@ -81,6 +84,18 @@ def root():
 @app.get("/api/projects")
 def get_projects():
     return projects_db
+
+@app.post("/api/tasks")
+def create_task(task_create: TaskCreate):
+    global task_id_counter
+    task = {
+        "id": task_id_counter,
+        "title": task_create.title,
+        "completed": False
+    }
+    tasks_db.append(task)
+    task_id_counter += 1
+    return task
 
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: int):
