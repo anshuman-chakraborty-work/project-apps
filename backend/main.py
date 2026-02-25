@@ -112,6 +112,14 @@ def update_task(task_id: int, task_update: TaskUpdate):
             return task
     raise HTTPException(status_code=404, detail="Task not found")
 
+@app.delete("/api/tasks/{task_id}")
+def delete_task(task_id: int):
+    for i, task in enumerate(tasks_db):
+        if task["id"] == task_id:
+            tasks_db.pop(i)
+            return {"message": "Task deleted"}
+    raise HTTPException(status_code=404, detail="Task not found")
+
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: int):
     for project in projects_db:
