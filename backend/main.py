@@ -97,6 +97,10 @@ def create_task(task_create: TaskCreate):
     task_id_counter += 1
     return task
 
+@app.get("/api/tasks")
+def get_tasks():
+    return tasks_db
+
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: int):
     for project in projects_db:
