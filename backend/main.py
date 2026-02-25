@@ -71,6 +71,9 @@ projects_db = [
     {"id": 4, "name": "Image Classifier", "description": "CNN model that classifies images", "type": "cnn"}
 ]
 
+tasks_db = []
+task_id_counter = 1
+
 @app.get("/")
 def root():
     return {"status": "running"}
